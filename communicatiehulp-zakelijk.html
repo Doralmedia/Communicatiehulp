@@ -100,6 +100,9 @@
   .analyze-patterns-btn:hover { background:#1D4ED8; transform:translateY(-1px); }
   .analyze-patterns-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
   @media(max-width:480px){.situation-grid{grid-template-columns:1fr;}.score-row{grid-template-columns:1fr;}.role-row{flex-direction:column;}}
+
+  .download-btn { position:fixed; bottom:24px; right:24px; background:#2563EB; color:#fff; border:none; border-radius:999px; padding:12px 20px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; cursor:pointer; box-shadow:0 4px 16px rgba(37,99,235,0.3); z-index:999; transition:all 0.2s; display:flex; align-items:center; gap:8px; }
+  .download-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(37,99,235,0.4); }
 </style>
 </head>
 <body>
@@ -124,7 +127,8 @@
     <h2>API-sleutel</h2>
     <p style="font-size:13px;color:#64748B;margin-bottom:12px;line-height:1.6;">Vul je Anthropic API-sleutel in. Wordt lokaal opgeslagen in je browser.</p>
     <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="width:100%;border:1.5px solid #DBEAFE;border-radius:10px;padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:14px;color:#1E2A3B;background:#F8FAFF;outline:none;" oninput="saveApiKey(this.value)" />
-    <p style="font-size:11px;color:#94A3B8;margin-top:8px;">Ophalen via <a href="https://console.anthropic.com" target="_blank" style="color:#2563EB;">console.anthropic.com</a></p>
+    <p id="apiKeyHint" style="font-size:11px;margin-top:6px;"></p>
+    <p style="font-size:11px;color:#94A3B8;margin-top:4px;">Ophalen via <a href="https://console.anthropic.com" target="_blank" style="color:#2563EB;">console.anthropic.com</a></p>
   </div>
 
   <div class="card" id="step1-card">
@@ -191,203 +195,314 @@
     <div id="patternContent" style="margin-top:16px;"></div>
   </div>
 
+<button class="download-btn" onclick="downloadApp()">&#x2B07; Download app</button>
 </div>
 <script>
-var sel='', rol='', rec=null, opname=false, tekst='';
-var SK='ch_zak';
-var isRecording=false, recognition=null, autoRestart=false;
+var sel = '', rol = '', tekst = '';
+var isRecording = false, recognition = null, autoRestart = false, restartTimer = null;
+var SK = 'ch_zak';
 
-function selectSituation(b,t){document.querySelectorAll('.situation-btn').forEach(function(x){x.classList.remove('active');});b.classList.add('active');sel=t;}
-function selectRole(b,r){document.querySelectorAll('.role-btn').forEach(function(x){x.classList.remove('active');});b.classList.add('active');rol=r;}
-
-var autoRestart = false;
-
-  function maakRecognition() {
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return null;
-    var r = new SR();
-    r.lang = 'nl-NL';
-    r.continuous = false;
-    r.interimResults = false;
-    r.onresult = function(e) {
-      for (var i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) {
-          transcript += e.results[i][0].transcript + ' ';
-        }
-      }
-      var box = document.getElementById('transcriptBox');
-      box.textContent = transcript;
-      box.classList.add('has-content');
-    };
-    r.onend = function() {
-      if (autoRestart && isRecording) {
-        try { recognition = maakRecognition(); recognition.start(); }
-        catch(e) {}
-      }
-    };
-    r.onerror = function(e) {
-      if (e.error === 'no-speech') return;
-      stopRecording();
-      showError('Microfoon niet beschikbaar. Typ het gesprek hieronder.');
-    };
-    return r;
-  }
-  function toggleRecording() {
-    if (isRecording) { stopRecording(); } else { startRecording(); }
-  }
-  function startRecording() {
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { showError('Spraakherkenning niet beschikbaar. Typ het gesprek hieronder.'); return; }
-    autoRestart = true;
-    recognition = maakRecognition();
-    try { recognition.start(); } catch(e) { showError('Kon opname niet starten.'); return; }
-    isRecording = true;
-    document.getElementById('recordBtn').classList.add('recording');
-    document.getElementById('recordBtn').innerHTML = '&#9209;';
-    document.getElementById('recordStatus').textContent = 'Opname bezig... tik om te stoppen';
-    document.getElementById('recordStatus').classList.add('active');
-  }
-  function stopRecording() {
-    autoRestart = false;
-    isRecording = false;
-    if (recognition) { try { recognition.stop(); } catch(e) {} }
-    document.getElementById('recordBtn').classList.remove('recording');
-    document.getElementById('recordBtn').innerHTML = '&#x1F3A4;';
-    document.getElementById('recordStatus').textContent = 'Opname gestopt';
-    document.getElementById('recordStatus').classList.remove('active');
-  }
-function fout(msg){var e=document.getElementById('errorMsg');e.textContent=msg;e.style.display='block';}
-
-function laden(){try{return JSON.parse(localStorage.getItem(SK)||'[]');}catch(e){return[];}}
-function opslaan(data){
-  var g=laden();
-  g.unshift({
-    id:Date.now(),
-    datum:new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'}),
-    tijd:new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'}),
-    situatie:sel||'algemeen',
-    rol:rol||'',
-    context:document.getElementById('contextInput').value.trim(),
-    e:data.score_effectiviteit,
-    t:data.score_toon,
-    r:data.score_resultaat,
-    pos:data.positief,
-    vb:data.verbeterpunt,
-    tip:data.tip,
-    alt:data.alternatief
-  });
-  localStorage.setItem(SK,JSON.stringify(g.slice(0,50)));
+function selectSituation(b, t) {
+  document.querySelectorAll('.situation-btn').forEach(function(x) { x.classList.remove('active'); });
+  b.classList.add('active'); sel = t;
 }
-function verwijder(id){
-  var g=laden().filter(function(x){return x.id!==id;});
-  localStorage.setItem(SK,JSON.stringify(g));
+function selectRole(b, r) {
+  document.querySelectorAll('.role-btn').forEach(function(x) { x.classList.remove('active'); });
+  b.classList.add('active'); rol = r;
+}
+
+function maakRecognition() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  var r = new SR();
+  r.lang = 'nl-NL';
+  r.continuous = true;
+  r.interimResults = true;
+  r.onresult = function(e) {
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        tekst += e.results[i][0].transcript + ' ';
+      }
+    }
+    var box = document.getElementById('transcriptBox');
+    box.textContent = tekst;
+    box.classList.add('has-content');
+  };
+  r.onend = function() {
+    if (autoRestart && isRecording) {
+      restartTimer = setTimeout(function() {
+        if (autoRestart && isRecording) {
+          try {
+            recognition = maakRecognition();
+            recognition.start();
+          } catch(e) {}
+        }
+      }, 250);
+    }
+  };
+  r.onerror = function(e) {
+    if (e.error === 'no-speech' || e.error === 'aborted') return;
+    stopRecording();
+    fout('Microfoon niet beschikbaar. Typ het gesprek hieronder.');
+  };
+  return r;
+}
+
+function toggleRecording() {
+  if (isRecording) { stopRecording(); } else { startRecording(); }
+}
+
+function startRecording() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { fout('Spraakherkenning niet beschikbaar. Typ het gesprek hieronder.'); return; }
+  autoRestart = true;
+  recognition = maakRecognition();
+  try { recognition.start(); } catch(e) { fout('Kon opname niet starten: ' + e.message); return; }
+  isRecording = true;
+  document.getElementById('recordBtn').classList.add('recording');
+  document.getElementById('recordBtn').innerHTML = '&#9209;';
+  document.getElementById('recordStatus').textContent = 'Opname bezig... tik om te stoppen';
+  document.getElementById('recordStatus').classList.add('active');
+}
+
+function stopRecording() {
+  autoRestart = false;
+  isRecording = false;
+  if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; }
+  if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; }
+  document.getElementById('recordBtn').classList.remove('recording');
+  document.getElementById('recordBtn').innerHTML = '&#x1F3A4;';
+  document.getElementById('recordStatus').textContent = 'Opname gestopt';
+  document.getElementById('recordStatus').classList.remove('active');
+}
+
+function fout(msg) {
+  var e = document.getElementById('errorMsg');
+  e.textContent = msg; e.style.display = 'block';
+}
+
+function laden() {
+  try { return JSON.parse(localStorage.getItem(SK) || '[]'); }
+  catch(e) { return []; }
+}
+
+function opslaan(data) {
+  var g = laden();
+  g.unshift({
+    id: Date.now(),
+    datum: new Date().toLocaleDateString('nl-NL', {day:'numeric', month:'long', year:'numeric'}),
+    tijd: new Date().toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit'}),
+    situatie: sel || 'algemeen',
+    rol: rol || '',
+    context: document.getElementById('contextInput').value.trim(),
+    e: data.score_effectiviteit,
+    t: data.score_toon,
+    r: data.score_resultaat,
+    pos: data.positief,
+    vb: data.verbeterpunt,
+    tip: data.tip,
+    alt: data.alternatief
+  });
+  localStorage.setItem(SK, JSON.stringify(g.slice(0, 50)));
+}
+
+function verwijder(id) {
+  var g = laden().filter(function(x) { return x.id !== id; });
+  localStorage.setItem(SK, JSON.stringify(g));
   toonGeschiedenis();
 }
-function toonGeschiedenis(){
-  var g=laden();var list=document.getElementById('historyList');
-  if(!g.length){list.innerHTML='<div class="empty-history">Nog geen gesprekken opgeslagen.<br>Analyseer eerst een gesprek.</div>';return;}
-  var html='';
-  g.forEach(function(x){
-    var gem=Math.round(((x.e||0)+(x.t||0)+(x.r||0))/3);
-    html+='<div class="history-item" onclick="toonDetail('+x.id+')">';
-    html+='<button class="history-delete" onclick="event.stopPropagation();verwijder('+x.id+')">&#x1F5D1;</button>';
-    html+='<div class="history-meta">'+x.datum+' om '+x.tijd+' &mdash; '+(x.situatie||'')+'</div>';
-    html+='<div class="history-context">'+(x.context||'Geen context')+'</div>';
-    html+='<div class="history-score">Gem. score: '+gem+'/10</div>';
-    html+='</div>';
+
+function toonGeschiedenis() {
+  var g = laden();
+  var list = document.getElementById('historyList');
+  if (!g.length) { list.innerHTML = '<div class="empty-history">Nog geen gesprekken opgeslagen.<br>Analyseer eerst een gesprek.</div>'; return; }
+  var html = '';
+  g.forEach(function(x) {
+    var gem = Math.round(((x.e||0) + (x.t||0) + (x.r||0)) / 3);
+    html += '<div class="history-item" onclick="toonDetail(' + x.id + ')">';
+    html += '<button class="history-delete" onclick="event.stopPropagation();verwijder(' + x.id + ')">&#x1F5D1;</button>';
+    html += '<div class="history-meta">' + x.datum + ' om ' + x.tijd + ' &mdash; ' + (x.situatie||'') + '</div>';
+    html += '<div class="history-context">' + (x.context||'Geen context') + '</div>';
+    html += '<div class="history-score">Gem. score: ' + gem + '/10</div>';
+    html += '</div>';
   });
-  list.innerHTML=html;
-}
-function score(id,fid,v){
-  var s=Math.min(10,Math.max(1,v||5));
-  document.getElementById(id).innerHTML=s+'<span>/10</span>';
-  setTimeout(function(){document.getElementById(fid).style.width=(s*10)+'%';},200);
-}
-function toonDetail(id){
-  var g=null;laden().forEach(function(x){if(x.id===id)g=x;});if(!g)return;
-  document.getElementById('feedbackCard').classList.add('visible');
-  score('scoreEffectief','fillEffectief',g.e);score('scoreToon','fillToon',g.t);score('scoreResultaat','fillResultaat',g.r);
-  var alt=g.alt?'<div class="alternative-box"><div class="alt-label">Alternatief</div><div class="alt-text">&ldquo;'+g.alt+'&rdquo;</div></div>':'';
-  document.getElementById('feedbackContent').innerHTML=
-    '<div style="font-size:12px;color:#64748B;margin-bottom:16px;">'+g.datum+' om '+g.tijd+'</div>'+
-    '<div class="feedback-block positive"><div class="block-label">Wat goed ging</div><div class="block-text">'+(g.pos||'&mdash;')+'</div></div>'+
-    '<div class="feedback-block improve"><div class="block-label">Verbeterpunt</div><div class="block-text">'+(g.vb||'&mdash;')+'</div></div>'+
-    '<div class="feedback-block tip"><div class="block-label">Tip</div><div class="block-text">'+(g.tip||'&mdash;')+'</div></div>'+alt;
-  switchTab('nieuw');document.getElementById('feedbackCard').scrollIntoView({behavior:'smooth'});
+  list.innerHTML = html;
 }
 
-async function analyzeConversation(){
-  var ctx=document.getElementById('contextInput').value.trim();
-  var man=document.getElementById('manualInput').value.trim();
-  var gsp=tekst||man;
-  if(!gsp&&!ctx){fout('Voeg een context toe of neem een gesprek op.');return;}
-  var sL={vergadering:'Vergadering',onderhandeling:'Onderhandeling',functionering:'Functioneringsgesprek',algemeen:'Algemeen zakelijk'};
-  var rL={leidinggevende:'Leidinggevende',medewerker:'Medewerker',gelijkwaardig:'Gelijkwaardig'};
+function setScore(id, fid, v) {
+  var s = Math.min(10, Math.max(1, v||5));
+  document.getElementById(id).innerHTML = s + '<span>/10</span>';
+  setTimeout(function() { document.getElementById(fid).style.width = (s*10) + '%'; }, 200);
+}
+
+function toonDetail(id) {
+  var g = null;
+  laden().forEach(function(x) { if (x.id === id) g = x; });
+  if (!g) return;
+  document.getElementById('feedbackCard').classList.add('visible');
+  setScore('scoreEffectief', 'fillEffectief', g.e);
+  setScore('scoreToon', 'fillToon', g.t);
+  setScore('scoreResultaat', 'fillResultaat', g.r);
+  var alt = g.alt ? '<div class="alternative-box"><div class="alt-label">Alternatief</div><div class="alt-text">&ldquo;' + g.alt + '&rdquo;</div></div>' : '';
+  document.getElementById('feedbackContent').innerHTML =
+    '<div style="font-size:12px;color:#64748B;margin-bottom:16px;">' + g.datum + ' om ' + g.tijd + '</div>' +
+    '<div class="feedback-block positive"><div class="block-label">Wat goed ging</div><div class="block-text">' + (g.pos||'&mdash;') + '</div></div>' +
+    '<div class="feedback-block improve"><div class="block-label">Verbeterpunt</div><div class="block-text">' + (g.vb||'&mdash;') + '</div></div>' +
+    '<div class="feedback-block tip"><div class="block-label">Tip</div><div class="block-text">' + (g.tip||'&mdash;') + '</div></div>' + alt;
+  switchTab('nieuw');
+  document.getElementById('feedbackCard').scrollIntoView({behavior:'smooth'});
+}
+
+async function analyzeConversation() {
+  var ctx = document.getElementById('contextInput').value.trim();
+  var man = document.getElementById('manualInput').value.trim();
+  var gsp = tekst || man;
+  if (!gsp && !ctx) { fout('Voeg een context toe of neem een gesprek op.'); return; }
+  var sL = {vergadering:'Vergadering', onderhandeling:'Onderhandeling', functionering:'Functioneringsgesprek', algemeen:'Algemeen zakelijk'};
+  var rL = {leidinggevende:'Leidinggevende', medewerker:'Medewerker', gelijkwaardig:'Gelijkwaardig'};
   document.getElementById('loading').classList.add('visible');
   document.getElementById('feedbackCard').classList.remove('visible');
-  document.getElementById('analyzeBtn').disabled=true;
-  document.getElementById('errorMsg').style.display='none';
-  var p='Zakelijke communicatiecoach. Type: '+(sL[sel]||'zakelijk')+'. Rol: '+(rL[rol]||'?')+'. Context: '+(ctx||'?')+'. Gesprek: '+(gsp||'?')+'. Alleen JSON: {"score_effectiviteit":<1-10>,"score_toon":<1-10>,"score_resultaat":<1-10>,"positief":"<t>","verbeterpunt":"<t>","tip":"<t>","alternatief":"<t>"}';
-  try{
-    var k=localStorage.getItem('ch_apikey')||'';
-    if(!k)throw new Error('Vul eerst je API-sleutel in.');
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:p}]})});
-    var d=await resp.json();
-    var raw=(d.content&&d.content[0])?d.content[0].text:'';
-    var res;if(d.error)throw new Error(d.error.message||'API fout');
-try{res=JSON.parse(raw.replace(/```json|```/g,'').trim());}catch(e){throw new Error('Antwoord: '+raw.substring(0,150));}
-    opslaan(res);toonFeedback(res);
-  }catch(e){document.getElementById('loading').classList.remove('visible');document.getElementById('analyzeBtn').disabled=false;fout('Er ging iets mis: '+e.message);}
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('errorMsg').style.display = 'none';
+  var p = 'Zakelijke communicatiecoach. Type: ' + (sL[sel]||'zakelijk') + '. Rol: ' + (rL[rol]||'?') + '. Context: ' + (ctx||'?') + '. Gesprek: ' + (gsp||'?') + '. Alleen JSON: {"score_effectiviteit":<1-10>,"score_toon":<1-10>,"score_resultaat":<1-10>,"positief":"<t>","verbeterpunt":"<t>","tip":"<t>","alternatief":"<t>"}';
+  try {
+    var k = localStorage.getItem('ch_apikey') || '';
+    if (!k) throw new Error('Vul eerst je API-sleutel in.');
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'x-api-key':k, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:1000, messages:[{role:'user', content:p}]})
+    });
+    var d = await resp.json();
+    if (d.error) throw new Error(d.error.message || 'API fout');
+    var raw = (d.content && d.content[0]) ? d.content[0].text : '';
+    var res;
+    try { res = JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+    catch(e) { throw new Error('Antwoord: ' + raw.substring(0, 150)); }
+    opslaan(res);
+    toonFeedback(res);
+  } catch(e) {
+    document.getElementById('loading').classList.remove('visible');
+    document.getElementById('analyzeBtn').disabled = false;
+    fout('Er ging iets mis: ' + e.message);
+  }
 }
-function toonFeedback(r){
+
+function toonFeedback(r) {
   document.getElementById('loading').classList.remove('visible');
-  score('scoreEffectief','fillEffectief',r.score_effectiviteit);score('scoreToon','fillToon',r.score_toon);score('scoreResultaat','fillResultaat',r.score_resultaat);
-  var alt=r.alternatief?'<div class="alternative-box"><div class="alt-label">Probeer het zo</div><div class="alt-text">&ldquo;'+r.alternatief+'&rdquo;</div></div>':'';
-  document.getElementById('feedbackContent').innerHTML=
-    '<div class="feedback-block positive"><div class="block-label">Wat goed ging</div><div class="block-text">'+(r.positief||'&mdash;')+'</div></div>'+
-    '<div class="feedback-block improve"><div class="block-label">Verbeterpunt</div><div class="block-text">'+(r.verbeterpunt||'&mdash;')+'</div></div>'+
-    '<div class="feedback-block tip"><div class="block-label">Tip</div><div class="block-text">'+(r.tip||'&mdash;')+'</div></div>'+alt;
+  setScore('scoreEffectief', 'fillEffectief', r.score_effectiviteit);
+  setScore('scoreToon', 'fillToon', r.score_toon);
+  setScore('scoreResultaat', 'fillResultaat', r.score_resultaat);
+  var alt = r.alternatief ? '<div class="alternative-box"><div class="alt-label">Probeer het zo</div><div class="alt-text">&ldquo;' + r.alternatief + '&rdquo;</div></div>' : '';
+  document.getElementById('feedbackContent').innerHTML =
+    '<div class="feedback-block positive"><div class="block-label">Wat goed ging</div><div class="block-text">' + (r.positief||'&mdash;') + '</div></div>' +
+    '<div class="feedback-block improve"><div class="block-label">Verbeterpunt</div><div class="block-text">' + (r.verbeterpunt||'&mdash;') + '</div></div>' +
+    '<div class="feedback-block tip"><div class="block-label">Tip</div><div class="block-text">' + (r.tip||'&mdash;') + '</div></div>' + alt;
   document.getElementById('feedbackCard').classList.add('visible');
-  document.getElementById('analyzeBtn').disabled=false;
-  document.getElementById('feedbackCard').scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('analyzeBtn').disabled = false;
+  document.getElementById('feedbackCard').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
-async function analyzePatterns(){
-  var g=laden();
-  if(g.length<2){document.getElementById('patternContent').innerHTML='<p style="color:#64748B;font-size:13px;">Minimaal 2 gesprekken nodig.</p>';return;}
-  var k=localStorage.getItem('ch_apikey')||'';
-  if(!k){document.getElementById('patternContent').innerHTML='<p style="color:#2563EB;font-size:13px;">Vul eerst je API-sleutel in.</p>';return;}
-  document.getElementById('patternBtn').disabled=true;document.getElementById('patternBtn').textContent='Bezig...';document.getElementById('patternContent').innerHTML='';
-  var sam='';var max=Math.min(10,g.length);
-  for(var i=0;i<max;i++){sam+='G'+(i+1)+': type='+g[i].situatie+' scores='+g[i].e+'/'+g[i].t+'/'+g[i].r+' positief='+g[i].pos+' verbeter='+g[i].vb+'. ';}
-  var p='Zakelijke coach. Analyseer patronen in: '+sam+'. Alleen JSON: {"patroon1":{"titel":"<t>","beschrijving":"<b>"},"patroon2":{"titel":"<t>","beschrijving":"<b>"},"kracht":{"titel":"<t>","beschrijving":"<b>"},"aanbeveling":"<t>"}';
-  try{
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:p}]})});
-    var d=await resp.json();var raw=(d.content&&d.content[0])?d.content[0].text:'';
-    var r=JSON.parse(raw.replace(/```json|```/g,'').trim());
-    var html='';
-    if(r.patroon1)html+='<div class="pattern-block"><div class="pattern-label">Patroon 1 &mdash; '+r.patroon1.titel+'</div>'+r.patroon1.beschrijving+'</div>';
-    if(r.patroon2)html+='<div class="pattern-block"><div class="pattern-label">Patroon 2 &mdash; '+r.patroon2.titel+'</div>'+r.patroon2.beschrijving+'</div>';
-    if(r.kracht)html+='<div class="pattern-block" style="background:#F0FDF4;border-left-color:#059669;"><div class="pattern-label" style="color:#059669;">Kracht &mdash; '+r.kracht.titel+'</div>'+r.kracht.beschrijving+'</div>';
-    if(r.aanbeveling)html+='<div class="pattern-block" style="background:#FEF3C7;border-left-color:#D97706;"><div class="pattern-label" style="color:#D97706;">Aanbeveling</div>'+r.aanbeveling+'</div>';
-    document.getElementById('patternContent').innerHTML=html;
-  }catch(e){document.getElementById('patternContent').innerHTML='<p style="color:#DC2626;font-size:13px;">Fout: '+e.message+'</p>';}
-  document.getElementById('patternBtn').disabled=false;document.getElementById('patternBtn').textContent='Analyseer communicatiepatronen';
+async function analyzePatterns() {
+  var g = laden();
+  if (g.length < 2) { document.getElementById('patternContent').innerHTML = '<p style="color:#64748B;font-size:13px;">Minimaal 2 gesprekken nodig.</p>'; return; }
+  var k = localStorage.getItem('ch_apikey') || '';
+  if (!k) { document.getElementById('patternContent').innerHTML = '<p style="color:#2563EB;font-size:13px;">Vul eerst je API-sleutel in.</p>'; return; }
+  document.getElementById('patternBtn').disabled = true;
+  document.getElementById('patternBtn').textContent = 'Bezig...';
+  document.getElementById('patternContent').innerHTML = '';
+  var sam = '';
+  var max = Math.min(10, g.length);
+  for (var i = 0; i < max; i++) {
+    sam += 'G' + (i+1) + ': type=' + g[i].situatie + ' scores=' + g[i].e + '/' + g[i].t + '/' + g[i].r + ' positief=' + g[i].pos + ' verbeter=' + g[i].vb + '. ';
+  }
+  var p = 'Zakelijke coach. Analyseer patronen in: ' + sam + '. Alleen JSON: {"patroon1":{"titel":"<t>","beschrijving":"<b>"},"patroon2":{"titel":"<t>","beschrijving":"<b>"},"kracht":{"titel":"<t>","beschrijving":"<b>"},"aanbeveling":"<t>"}';
+  try {
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'x-api-key':k, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:1000, messages:[{role:'user', content:p}]})
+    });
+    var d = await resp.json();
+    var raw = (d.content && d.content[0]) ? d.content[0].text : '';
+    var r = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    var html = '';
+    if (r.patroon1) html += '<div class="pattern-block"><div class="pattern-label">Patroon 1 &mdash; ' + r.patroon1.titel + '</div>' + r.patroon1.beschrijving + '</div>';
+    if (r.patroon2) html += '<div class="pattern-block"><div class="pattern-label">Patroon 2 &mdash; ' + r.patroon2.titel + '</div>' + r.patroon2.beschrijving + '</div>';
+    if (r.kracht) html += '<div class="pattern-block" style="background:#F0FDF4;border-left-color:#059669;"><div class="pattern-label" style="color:#059669;">Kracht &mdash; ' + r.kracht.titel + '</div>' + r.kracht.beschrijving + '</div>';
+    if (r.aanbeveling) html += '<div class="pattern-block" style="background:#FEF3C7;border-left-color:#D97706;"><div class="pattern-label" style="color:#D97706;">Aanbeveling</div>' + r.aanbeveling + '</div>';
+    document.getElementById('patternContent').innerHTML = html;
+  } catch(e) {
+    document.getElementById('patternContent').innerHTML = '<p style="color:#DC2626;font-size:13px;">Fout: ' + e.message + '</p>';
+  }
+  document.getElementById('patternBtn').disabled = false;
+  document.getElementById('patternBtn').textContent = 'Analyseer communicatiepatronen';
 }
 
-function switchTab(tab){
-  var tabs=['nieuw','geschiedenis','patronen'];
-  document.querySelectorAll('.tab-btn').forEach(function(b,i){b.classList.toggle('active',tabs[i]===tab);});
-  ['apiCard','step1-card','step2-card','loading','feedbackCard'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=tab==='nieuw'?'':'none';});
-  var h=document.getElementById('historyCard'),pt=document.getElementById('patternCard');
-  if(h)h.classList.toggle('visible',tab==='geschiedenis');
-  if(pt)pt.classList.toggle('visible',tab==='patronen');
-  if(tab==='geschiedenis')toonGeschiedenis();
-  if(tab==='patronen'){var n=laden().length;document.getElementById('patternCount').textContent=n<2?('Je hebt '+n+' gesprek'+(n===1?'':'ken')+' opgeslagen. Minimaal 2 nodig.'):(n+' gesprekken opgeslagen.');}
+function switchTab(tab) {
+  var tabs = ['nieuw', 'geschiedenis', 'patronen'];
+  document.querySelectorAll('.tab-btn').forEach(function(b, i) { b.classList.toggle('active', tabs[i] === tab); });
+  ['apiCard','step1-card','step2-card','loading','feedbackCard'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = tab === 'nieuw' ? '' : 'none';
+  });
+  var h = document.getElementById('historyCard'), pt = document.getElementById('patternCard');
+  if (h) h.classList.toggle('visible', tab === 'geschiedenis');
+  if (pt) pt.classList.toggle('visible', tab === 'patronen');
+  if (tab === 'geschiedenis') toonGeschiedenis();
+  if (tab === 'patronen') {
+    var n = laden().length;
+    document.getElementById('patternCount').textContent = n < 2 ? ('Je hebt ' + n + ' gesprek' + (n===1?'':'ken') + ' opgeslagen. Minimaal 2 nodig.') : (n + ' gesprekken opgeslagen.');
+  }
 }
-function resetAll(){tekst='';sel='';rol='';document.getElementById('contextInput').value='';document.getElementById('manualInput').value='';document.getElementById('transcriptBox').textContent='Je opname verschijnt hier als tekst...';document.getElementById('transcriptBox').classList.remove('has-content');document.querySelectorAll('.situation-btn,.role-btn').forEach(function(b){b.classList.remove('active');});document.getElementById('feedbackCard').classList.remove('visible');document.getElementById('errorMsg').style.display='none';document.getElementById('recordStatus').textContent='Tik om op te nemen';window.scrollTo({top:0,behavior:'smooth'});}
-function saveApiKey(v){localStorage.setItem('ch_apikey',v);}
-window.addEventListener('DOMContentLoaded',function(){var s=localStorage.getItem('ch_apikey');if(s)document.getElementById('apiKeyInput').value=s;});
+
+function resetAll() {
+  stopRecording();
+  tekst = ''; sel = ''; rol = '';
+  document.getElementById('contextInput').value = '';
+  document.getElementById('manualInput').value = '';
+  document.getElementById('transcriptBox').textContent = 'Je opname verschijnt hier als tekst...';
+  document.getElementById('transcriptBox').classList.remove('has-content');
+  document.getElementById('recordBtn').innerHTML = '&#x1F3A4;';
+  document.getElementById('recordStatus').textContent = 'Tik om op te nemen';
+  document.querySelectorAll('.situation-btn,.role-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('feedbackCard').classList.remove('visible');
+  document.getElementById('errorMsg').style.display = 'none';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+
+  function downloadApp() {
+    var html = document.documentElement.outerHTML;
+    var blob = new Blob([html], {type: 'text/html'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'communicatiehulp-zakelijk.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function saveApiKey(v) {
+  var clean = v.trim();
+  localStorage.setItem('ch_apikey', clean);
+  var hint = document.getElementById('apiKeyHint');
+  if (hint) {
+    if (clean.length > 8) {
+      hint.textContent = 'Opgeslagen: ' + clean.substring(0,8) + '...' + clean.slice(-4) + ' (' + clean.length + ' tekens)';
+      hint.style.color = '#059669';
+    } else if (clean.length > 0) {
+      hint.textContent = 'Sleutel lijkt te kort (' + clean.length + ' tekens)';
+      hint.style.color = '#DC2626';
+    } else {
+      hint.textContent = '';
+    }
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  var s = localStorage.getItem('ch_apikey');
+  if (s) { document.getElementById('apiKeyInput').value = s; saveApiKey(s); }
+});
 </script>
 </body>
 </html>
