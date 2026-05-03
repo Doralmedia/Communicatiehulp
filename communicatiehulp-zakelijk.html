@@ -128,6 +128,8 @@
     <p style="font-size:13px;color:#64748B;margin-bottom:12px;line-height:1.6;">Vul je Anthropic API-sleutel in. Wordt lokaal opgeslagen in je browser.</p>
     <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="width:100%;border:1.5px solid #DBEAFE;border-radius:10px;padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:14px;color:#1E2A3B;background:#F8FAFF;outline:none;" oninput="saveApiKey(this.value)" />
     <p id="apiKeyHint" style="font-size:11px;margin-top:6px;"></p>
+    <button onclick="testApiKey()" style="margin-top:10px;padding:8px 16px;background:#2563EB;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;">Test verbinding</button>
+    <p id="apiTestResult" style="font-size:11px;margin-top:6px;"></p>
     <p style="font-size:11px;color:#94A3B8;margin-top:4px;">Ophalen via <a href="https://console.anthropic.com" target="_blank" style="color:#2563EB;">console.anthropic.com</a></p>
   </div>
 
@@ -480,6 +482,37 @@ function resetAll() {
     a.download = 'communicatiehulp-zakelijk.html';
     a.click();
     URL.revokeObjectURL(a.href);
+  }
+
+  
+  async function testApiKey() {
+    var k = localStorage.getItem('ch_apikey') || '';
+    var result = document.getElementById('apiTestResult');
+    if (!k) { result.textContent = 'Geen sleutel gevonden.'; result.style.color='#DC2626'; return; }
+    result.textContent = 'Bezig met testen...'; result.style.color='#64748B';
+    try {
+      var resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': k,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:10, messages:[{role:'user', content:'Zeg alleen: OK'}]})
+      });
+      var d = await resp.json();
+      if (d.error) {
+        result.textContent = 'Fout: ' + d.error.message + ' (type: ' + d.error.type + ')';
+        result.style.color = '#DC2626';
+      } else {
+        result.textContent = 'Verbinding OK! API werkt correct.';
+        result.style.color = '#059669';
+      }
+    } catch(e) {
+      result.textContent = 'Netwerkfout: ' + e.message;
+      result.style.color = '#DC2626';
+    }
   }
 
   function saveApiKey(v) {
