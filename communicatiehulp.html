@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Communicatiehulp — Jouw persoonlijke communicatiecoach</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F7F3EE;
+    --warm: #E8DDD0;
+    --terracotta: #C4724A;
+    --terracotta-light: #D4866A;
+    --deep: #2C1F14;
+    --mid: #6B4F3A;
+    --soft: #A08070;
+    --green: #4A7C6A;
+    --green-light: #6A9C8A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--deep);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      radial-gradient(ellipse at 20% 20%, rgba(196,114,74,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(74,124,106,0.06) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+    animation: fadeDown 0.8s ease both;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 400;
+    color: var(--deep);
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .logo span {
+    color: var(--terracotta);
+    font-style: italic;
+  }
+
+  .tagline {
+    font-size: 14px;
+    color: var(--soft);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 8px;
+    font-weight: 300;
+  }
+
+  /* Situation card */
+  .card {
+    background: white;
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 24px rgba(44,31,20,0.06);
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .card:nth-child(2) { animation-delay: 0.1s; }
+  .card:nth-child(3) { animation-delay: 0.2s; }
+
+  .card-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--terracotta);
+    margin-bottom: 12px;
+  }
+
+  .card h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--deep);
+    margin-bottom: 16px;
+  }
+
+  /* Situation selector */
+  .situation-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .situation-btn {
+    padding: 12px 16px;
+    border: 1.5px solid var(--warm);
+    border-radius: 12px;
+    background: var(--cream);
+    color: var(--mid);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .situation-btn:hover {
+    border-color: var(--terracotta-light);
+    background: #FDF8F5;
+  }
+
+  .situation-btn.active {
+    border-color: var(--terracotta);
+    background: #FDF0EB;
+    color: var(--deep);
+    font-weight: 500;
+  }
+
+  .situation-btn .emoji { font-size: 18px; }
+
+  textarea {
+    width: 100%;
+    border: 1.5px solid var(--warm);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--deep);
+    background: var(--cream);
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.6;
+  }
+
+  textarea:focus { border-color: var(--terracotta-light); }
+  textarea::placeholder { color: var(--soft); }
+
+  /* Recording section */
+  .record-area {
+    text-align: center;
+  }
+
+  .record-btn {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    border: none;
+    background: var(--terracotta);
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(196,114,74,0.35);
+    position: relative;
+  }
+
+  .record-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 32px rgba(196,114,74,0.45);
+  }
+
+  .record-btn.recording {
+    background: #C44A4A;
+    box-shadow: 0 8px 24px rgba(196,74,74,0.4);
+    animation: pulse 1.5s ease infinite;
+  }
+
+  .record-btn.recording::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 2px solid rgba(196,74,74,0.4);
+    animation: ripple 1.5s ease infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+  }
+
+  @keyframes ripple {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+
+  .record-status {
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--soft);
+    height: 20px;
+    transition: all 0.3s;
+  }
+
+  .record-status.active {
+    color: #C44A4A;
+    font-weight: 500;
+  }
+
+  /* Transcript area */
+  .transcript-box {
+    background: var(--cream);
+    border: 1.5px solid var(--warm);
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 80px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--mid);
+    margin-top: 20px;
+    font-style: italic;
+  }
+
+  .transcript-box.has-content {
+    color: var(--deep);
+    font-style: normal;
+  }
+
+  /* Analyze button */
+  .analyze-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--deep);
+    color: var(--cream);
+    border: none;
+    border-radius: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 16px;
+    letter-spacing: 0.3px;
+  }
+
+  .analyze-btn:hover {
+    background: var(--mid);
+    transform: translateY(-1px);
+  }
+
+  .analyze-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Feedback section */
+  .feedback-card {
+    background: white;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 4px 24px rgba(44,31,20,0.06);
+    animation: fadeUp 0.6s ease both;
+    display: none;
+  }
+
+  .feedback-card.visible { display: block; }
+
+  .feedback-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .feedback-icon {
+    width: 44px;
+    height: 44px;
+    background: #F0F7F4;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+
+  .feedback-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--deep);
+  }
+
+  /* Score meter */
+  .score-section {
+    margin-bottom: 28px;
+  }
+
+  .score-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--soft);
+    margin-bottom: 10px;
+  }
+
+  .score-bar-bg {
+    height: 8px;
+    background: var(--warm);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--terracotta), var(--green));
+    transition: width 1s ease;
+    width: 0%;
+  }
+
+  .score-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    color: var(--deep);
+    margin-top: 8px;
+  }
+
+  .score-number span {
+    font-size: 16px;
+    color: var(--soft);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* Feedback blocks */
+  .feedback-block {
+    padding: 18px 20px;
+    border-radius: 14px;
+    margin-bottom: 14px;
+  }
+
+  .feedback-block.positive {
+    background: #F0F7F4;
+    border-left: 3px solid var(--green);
+  }
+
+  .feedback-block.improve {
+    background: #FDF0EB;
+    border-left: 3px solid var(--terracotta);
+  }
+
+  .feedback-block.tip {
+    background: #F5F0FA;
+    border-left: 3px solid #7C6AAC;
+  }
+
+  .block-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .positive .block-label { color: var(--green); }
+  .improve .block-label { color: var(--terracotta); }
+  .tip .block-label { color: #7C6AAC; }
+
+  .block-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--deep);
+  }
+
+  /* Alternative phrasing */
+  .alternative-box {
+    background: var(--cream);
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 20px;
+    border: 1.5px dashed var(--warm);
+  }
+
+  .alt-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--soft);
+    margin-bottom: 10px;
+  }
+
+  .alt-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-style: italic;
+    color: var(--deep);
+    line-height: 1.6;
+  }
+
+  /* Loading */
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 40px;
+  }
+
+  .loading.visible { display: block; }
+
+  .loading-dots {
+    display: inline-flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .loading-dots span {
+    width: 10px;
+    height: 10px;
+    background: var(--terracotta);
+    border-radius: 50%;
+    animation: bounce 1.2s ease infinite;
+  }
+
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-10px); opacity: 1; }
+  }
+
+  .loading-text {
+    font-size: 14px;
+    color: var(--soft);
+    font-style: italic;
+  }
+
+  /* New conversation btn */
+  .new-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: transparent;
+    border: 1.5px solid var(--warm);
+    border-radius: 999px;
+    color: var(--mid);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 24px;
+  }
+
+  .new-btn:hover {
+    border-color: var(--mid);
+    color: var(--deep);
+  }
+
+  /* Divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--warm);
+  }
+
+  .divider span {
+    font-size: 12px;
+    color: var(--soft);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .situation-grid { grid-template-columns: 1fr; }
+    .logo { font-size: 38px; }
+    .card { padding: 24px; }
+  }
+
+  .error-msg {
+    background: #FDF0EB;
+    border: 1px solid var(--terracotta-light);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--terracotta);
+    margin-top: 12px;
+    display: none;
+  }
+
+  /* Tab nav */
+  .tab-nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    background: white;
+    border-radius: 16px;
+    padding: 8px;
+    box-shadow: 0 4px 24px rgba(44,31,20,0.06);
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #A08070;
+    transition: all 0.2s;
+  }
+  .tab-btn.active { background: #FDF0EB; color: #C4724A; }
+
+  /* Geschiedenis */
+  .history-card {
+    background: white;
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 24px rgba(44,31,20,0.06);
+    display: none;
+  }
+  .history-card.visible { display: block; }
+  .history-item {
+    border: 1.5px solid #E8DDD0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .history-item:hover { border-color: #C4724A; background: #FDF8F5; }
+  .history-meta { font-size: 11px; color: #A08070; margin-bottom: 4px; letter-spacing: 0.5px; }
+  .history-context { font-size: 13px; color: #2C1F14; font-weight: 500; }
+  .history-score { font-size: 12px; color: #6B4F3A; margin-top: 4px; }
+  .history-delete {
+    float: right;
+    background: none;
+    border: none;
+    color: #A08070;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+  }
+  .history-delete:hover { color: #C44A4A; }
+  .empty-history { text-align: center; color: #A08070; font-size: 14px; padding: 24px 0; font-style: italic; }
+
+  /* Patroon card */
+  .pattern-card {
+    background: white;
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 24px rgba(44,31,20,0.06);
+    display: none;
+  }
+  .pattern-card.visible { display: block; }
+  .pattern-block {
+    background: #F5F0FA;
+    border-left: 3px solid #7C6AAC;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #2C1F14;
+  }
+  .pattern-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #7C6AAC;
+    margin-bottom: 6px;
+  }
+  .analyze-patterns-btn {
+    width: 100%;
+    padding: 14px;
+    background: #7C6AAC;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .analyze-patterns-btn:hover { background: #6A5A9A; transform: translateY(-1px); }
+  .analyze-patterns-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .pattern-count { font-size: 12px; color: #A08070; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="logo">Communicatie<span>hulp</span></div>
+    <div class="tagline">Jouw persoonlijke communicatiecoach</div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('nieuw')">➕ Nieuw gesprek</button>
+    <button class="tab-btn" onclick="switchTab('geschiedenis')">📋 Geschiedenis</button>
+    <button class="tab-btn" onclick="switchTab('patronen')">🔍 Patronen</button>
+  </div>
+
+  <!-- API Key -->
+  <div class="card" id="apiCard">
+    <div class="card-label">Instellingen</div>
+    <h2>API-sleutel</h2>
+    <p style="font-size:13px;color:var(--soft);margin-bottom:12px;line-height:1.6;">Vul je Anthropic API-sleutel in. Wordt alleen lokaal opgeslagen in je browser.</p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="width:100%;border:1.5px solid var(--warm);border-radius:12px;padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--deep);background:var(--cream);outline:none;" oninput="saveApiKey(this.value)" />
+    <p style="font-size:11px;color:var(--soft);margin-top:8px;">Sleutel ophalen via <a href="https://console.anthropic.com" target="_blank" style="color:var(--terracotta);">console.anthropic.com</a></p>
+  </div>
+
+  <!-- Step 1: Situation -->
+  <div class="card" id="step1">
+    <div class="card-label">Stap 1</div>
+    <h2>Wat is de situatie?</h2>
+    <div class="situation-grid">
+      <button class="situation-btn" onclick="selectSituation(this, 'puber')">
+        <span class="emoji">🧒</span> Gesprek met puber
+      </button>
+      <button class="situation-btn" onclick="selectSituation(this, 'relatie')">
+        <span class="emoji">💑</span> Relatiegesprek
+      </button>
+      <button class="situation-btn" onclick="selectSituation(this, 'conflict')">
+        <span class="emoji">⚡</span> Conflict oplossen
+      </button>
+      <button class="situation-btn" onclick="selectSituation(this, 'gezin')">
+        <span class="emoji">🏠</span> Gezinsgesprek
+      </button>
+      <button class="situation-btn" onclick="selectSituation(this, 'algemeen')" style="grid-column: span 2;">
+        <span class="emoji">💬</span> Algemeen gesprek — ik weet nog niet waarover
+      </button>
+    </div>
+    <textarea id="contextInput" rows="3" placeholder="Beschrijf kort de context... (bijv. 'Mijn dochter van 15 wil niet naar school, ik wil uitzoeken waarom')"></textarea>
+  </div>
+
+  <!-- Step 2: Record or type -->
+  <div class="card" id="step2">
+    <div class="card-label">Stap 2</div>
+    <h2>Neem het gesprek op</h2>
+
+    <div class="record-area">
+      <button class="record-btn" id="recordBtn" onclick="toggleRecording()">🎙️</button>
+      <div class="record-status" id="recordStatus">Tik om op te nemen</div>
+    </div>
+
+    <div id="transcriptBox" class="transcript-box">
+      Je opname verschijnt hier als tekst...
+    </div>
+
+    <div class="divider"><span>of typ het gesprek</span></div>
+
+    <textarea id="manualInput" rows="4" placeholder="Typ hier wat er gezegd is... (bijv. 'Ik zei: je móet gewoon naar school. Zij zei: jij begrijpt me nooit.')"></textarea>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <button class="analyze-btn" id="analyzeBtn" onclick="analyzeConversation()">
+      Analyseer gesprek →
+    </button>
+  </div>
+
+
+  <!-- Geschiedenis -->
+  <div class="history-card" id="historyCard">
+    <div class="card-label">Gespreksgeschiedenis</div>
+    <h2 style="font-family:'Playfair Display',serif;font-size:22px;color:#2C1F14;margin-bottom:16px;">Eerdere gesprekken</h2>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- Patronen -->
+  <div class="pattern-card" id="patternCard">
+    <div class="card-label">Patroonherkenning</div>
+    <h2 style="font-family:'Playfair Display',serif;font-size:22px;color:#2C1F14;margin-bottom:8px;">Terugkerende patronen</h2>
+    <div class="pattern-count" id="patternCount"></div>
+    <button class="analyze-patterns-btn" id="patternBtn" onclick="analyzePatterns()">🔍 Analyseer mijn communicatiepatronen</button>
+    <div id="patternContent" style="margin-top:16px;"></div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="loading-dots">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="loading-text">Alora analyseert het gesprek...</div>
+  </div>
+
+  <!-- Feedback -->
+  <div class="feedback-card" id="feedbackCard">
+    <div class="feedback-header">
+      <div class="feedback-icon">🌿</div>
+      <div class="feedback-title">Jouw coaching</div>
+    </div>
+
+    <div class="score-section">
+      <div class="score-label">Communicatiescore</div>
+      <div class="score-bar-bg">
+        <div class="score-bar-fill" id="scoreFill"></div>
+      </div>
+      <div class="score-number" id="scoreNumber">—<span>/10</span></div>
+    </div>
+
+    <div id="feedbackContent"></div>
+
+    <button class="new-btn" onclick="resetAll()">↺ Nieuw gesprek analyseren</button>
+  </div>
+
+</div>
+
+<script>
+  let selectedSituation = '';
+  let recognition = null;
+  let isRecording = false;
+  let transcript = '';
+  const STORAGE_KEY = 'ch_gesprekken';
+
+  function selectSituation(btn, type) {
+    document.querySelectorAll('.situation-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    selectedSituation = type;
+  }
+
+  function setupRecognition() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return null;
+    var r = new SR();
+    r.lang = 'nl-NL';
+    r.continuous = true;
+    r.interimResults = true;
+    r.onresult = function(event) {
+      var interim = '';
+      var final = '';
+      for (var i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) { final += event.results[i][0].transcript + ' '; }
+        else { interim += event.results[i][0].transcript; }
+      }
+      transcript += final;
+      var box = document.getElementById('transcriptBox');
+      box.textContent = transcript + interim;
+      box.classList.add('has-content');
+    };
+    r.onerror = function() {
+      stopRecording();
+      showError('Microfoon niet beschikbaar. Gebruik het tekstvak hieronder.');
+    };
+    return r;
+  }
+
+  function toggleRecording() {
+    if (isRecording) { stopRecording(); } else { startRecording(); }
+  }
+
+  function startRecording() {
+    recognition = setupRecognition();
+    if (!recognition) {
+      showError('Spraakherkenning niet beschikbaar. Gebruik Chrome of Safari, of typ het gesprek hieronder.');
+      return;
+    }
+    recognition.start();
+    isRecording = true;
+    document.getElementById('recordBtn').classList.add('recording');
+    document.getElementById('recordBtn').textContent = '\u23F9';
+    document.getElementById('recordStatus').textContent = 'Opname bezig... tik om te stoppen';
+    document.getElementById('recordStatus').classList.add('active');
+  }
+
+  function stopRecording() {
+    if (recognition) recognition.stop();
+    isRecording = false;
+    document.getElementById('recordBtn').classList.remove('recording');
+    document.getElementById('recordBtn').textContent = '\uD83C\uDF99';
+    document.getElementById('recordStatus').textContent = 'Opname gestopt';
+    document.getElementById('recordStatus').classList.remove('active');
+  }
+
+  function showError(msg) {
+    var el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function loadGesprekken() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch(e) { return []; }
+  }
+
+  function saveGesprek(data) {
+    var gesprekken = loadGesprekken();
+    gesprekken.unshift({
+      id: Date.now(),
+      datum: new Date().toLocaleDateString('nl-NL', {day:'numeric', month:'long', year:'numeric'}),
+      tijd: new Date().toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit'}),
+      situatie: selectedSituation || 'algemeen',
+      context: document.getElementById('contextInput').value.trim(),
+      gesprek: (transcript || document.getElementById('manualInput').value.trim()).substring(0, 500),
+      score: data.score,
+      positief: data.positief,
+      verbeterpunt: data.verbeterpunt,
+      tip: data.tip,
+      alternatief: data.alternatief
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(gesprekken.slice(0, 50)));
+  }
+
+  function deleteGesprek(id) {
+    var gesprekken = loadGesprekken().filter(function(g) { return g.id !== id; });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(gesprekken));
+    renderHistory();
+  }
+
+  function renderHistory() {
+    var gesprekken = loadGesprekken();
+    var list = document.getElementById('historyList');
+    if (!gesprekken.length) {
+      list.innerHTML = '<div class="empty-history">Nog geen gesprekken opgeslagen.<br>Analyseer eerst een gesprek.</div>';
+      return;
+    }
+    var emoji = {puber:'&#x1F9D2;', relatie:'&#x1F491;', conflict:'&#x26A1;', gezin:'&#x1F3E0;', algemeen:'&#x1F4AC;'};
+    var html = '';
+    gesprekken.forEach(function(g) {
+      var ic = emoji[g.situatie] || '&#x1F4AC;';
+      var ctx = g.context ? g.context : 'Geen context opgegeven';
+      var pos = g.positief ? g.positief.substring(0, 60) + '...' : '';
+      html += '<div class="history-item" onclick="showHistoryDetail(' + g.id + ')">';
+      html += '<button class="history-delete" onclick="event.stopPropagation();deleteGesprek(' + g.id + ')">&#x1F5D1;</button>';
+      html += '<div class="history-meta">' + ic + ' ' + g.datum + ' om ' + g.tijd + '</div>';
+      html += '<div class="history-context">' + ctx + '</div>';
+      html += '<div class="history-score">Score: ' + g.score + '/10 &nbsp;&middot;&nbsp; ' + pos + '</div>';
+      html += '</div>';
+    });
+    list.innerHTML = html;
+  }
+
+  function showHistoryDetail(id) {
+    var gesprekken = loadGesprekken();
+    var g = null;
+    gesprekken.forEach(function(x) { if (x.id === id) g = x; });
+    if (!g) return;
+    document.getElementById('feedbackCard').classList.add('visible');
+    document.getElementById('scoreNumber').innerHTML = g.score + '<span>/10</span>';
+    document.getElementById('scoreFill').style.width = (g.score * 10) + '%';
+    var altHtml = g.alternatief ? '<div class="alternative-box"><div class="alt-label">Alternatieve formulering</div><div class="alt-text">&ldquo;' + g.alternatief + '&rdquo;</div></div>' : '';
+    document.getElementById('feedbackContent').innerHTML =
+      '<div style="font-size:12px;color:#A08070;margin-bottom:16px;">' + g.datum + ' om ' + g.tijd + ' &mdash; ' + (g.context || 'Geen context') + '</div>' +
+      '<div class="feedback-block positive"><div class="block-label">Wat goed ging</div><div class="block-text">' + (g.positief || '&mdash;') + '</div></div>' +
+      '<div class="feedback-block improve"><div class="block-label">Verbeterpunt</div><div class="block-text">' + (g.verbeterpunt || '&mdash;') + '</div></div>' +
+      '<div class="feedback-block tip"><div class="block-label">Coach tip</div><div class="block-text">' + (g.tip || '&mdash;') + '</div></div>' +
+      altHtml;
+    switchTab('nieuw');
+    document.getElementById('feedbackCard').scrollIntoView({behavior:'smooth'});
+  }
+
+  async function analyzeConversation() {
+    var context = document.getElementById('contextInput').value.trim();
+    var manual = document.getElementById('manualInput').value.trim();
+    var gesprek = transcript || manual;
+
+    if (!gesprek && !context) {
+      showError('Voeg eerst een context toe of neem een gesprek op.');
+      return;
+    }
+
+    var situatieLabels = {
+      puber: 'Gesprek met een puber / tiener',
+      relatie: 'Relatiegesprek tussen partners',
+      conflict: 'Conflictoplossing',
+      gezin: 'Gezinsgesprek',
+      algemeen: 'Algemeen priveegesprek'
+    };
+
+    var situatieLabel = situatieLabels[selectedSituation] || 'Priveegesprek';
+
+    document.getElementById('loading').classList.add('visible');
+    document.getElementById('feedbackCard').classList.remove('visible');
+    document.getElementById('analyzeBtn').disabled = true;
+    document.getElementById('errorMsg').style.display = 'none';
+
+    var prompt = 'Je bent een warme communicatiecoach gespecialiseerd in priveegesprekken: ouder-kind, relaties, gezinssituaties.\n\n' +
+      'Situatietype: ' + situatieLabel + '\n' +
+      'Context: ' + (context || 'Niet opgegeven') + '\n' +
+      'Gespreksfragment: ' + (gesprek || 'Geen gesprek opgegeven') + '\n\n' +
+      'Analyseer dit gesprek en geef feedback in dit exacte JSON-formaat (geen extra tekst, alleen JSON):\n' +
+      '{"score":<getal 1-10>,"positief":"<wat ging goed>","verbeterpunt":"<wat kon beter>","tip":"<concrete tip>","alternatief":"<alternatieve formulering>"}';
+
+    try {
+      var apiKey = localStorage.getItem('ch_apikey') || '';
+      if (!apiKey) throw new Error('Vul eerst je API-sleutel in bovenaan de pagina.');
+      var response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5',
+          max_tokens: 1000,
+          messages: [{role: 'user', content: prompt}]
+        })
+      });
+
+      var data = await response.json();
+      if (data.error) throw new Error(data.error.message || 'API fout');
+      var raw = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
+      var result;
+      try {
+        var clean = raw.replace(/```json|```/g, '').trim();
+        result = JSON.parse(clean);
+      } catch(e) {
+        throw new Error('API antwoord: ' + raw.substring(0, 150));
+      }
+
+      saveGesprek(result);
+      showFeedback(result);
+
+    } catch(err) {
+      document.getElementById('loading').classList.remove('visible');
+      document.getElementById('analyzeBtn').disabled = false;
+      showError('Er ging iets mis: ' + err.message);
+    }
+  }
+
+  function showFeedback(result) {
+    document.getElementById('loading').classList.remove('visible');
+    var score = Math.min(10, Math.max(1, result.score || 5));
+    document.getElementById('scoreNumber').innerHTML = score + '<span>/10</span>';
+    setTimeout(function() {
+      document.getElementById('scoreFill').style.width = (score * 10) + '%';
+    }, 200);
+    var altHtml = result.alternatief ? '<div class="alternative-box"><div class="alt-label">Probeer het zo te zeggen</div><div class="alt-text">&ldquo;' + result.alternatief + '&rdquo;</div></div>' : '';
+    document.getElementById('feedbackContent').innerHTML =
+      '<div class="feedback-block positive"><div class="block-label">Wat goed ging</div><div class="block-text">' + (result.positief || '&mdash;') + '</div></div>' +
+      '<div class="feedback-block improve"><div class="block-label">Verbeterpunt</div><div class="block-text">' + (result.verbeterpunt || '&mdash;') + '</div></div>' +
+      '<div class="feedback-block tip"><div class="block-label">Coach tip</div><div class="block-text">' + (result.tip || '&mdash;') + '</div></div>' +
+      altHtml;
+    document.getElementById('feedbackCard').classList.add('visible');
+    document.getElementById('analyzeBtn').disabled = false;
+    document.getElementById('feedbackCard').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  async function analyzePatterns() {
+    var gesprekken = loadGesprekken();
+    if (gesprekken.length < 2) {
+      document.getElementById('patternContent').innerHTML = '<p style="color:#A08070;font-size:13px;">Je hebt minimaal 2 gesprekken nodig voor patroonherkenning.</p>';
+      return;
+    }
+    var apiKey = localStorage.getItem('ch_apikey') || '';
+    if (!apiKey) {
+      document.getElementById('patternContent').innerHTML = '<p style="color:#C4724A;font-size:13px;">Vul eerst je API-sleutel in bij Instellingen.</p>';
+      return;
+    }
+    document.getElementById('patternBtn').disabled = true;
+    document.getElementById('patternBtn').textContent = 'Bezig met analyseren...';
+    document.getElementById('patternContent').innerHTML = '';
+
+    var samenvatting = '';
+    var max = Math.min(10, gesprekken.length);
+    for (var i = 0; i < max; i++) {
+      var g = gesprekken[i];
+      samenvatting += 'Gesprek ' + (i+1) + ' (' + g.datum + ', situatie: ' + g.situatie + '):\n';
+      samenvatting += '- Context: ' + (g.context || 'onbekend') + '\n';
+      samenvatting += '- Score: ' + g.score + '/10\n';
+      samenvatting += '- Positief: ' + (g.positief || '') + '\n';
+      samenvatting += '- Verbeterpunt: ' + (g.verbeterpunt || '') + '\n\n';
+    }
+
+    var prompt = 'Je bent een communicatiecoach die patronen herkent over meerdere gesprekken heen.\n\n' +
+      'Hier zijn de laatste gesprekken van deze gebruiker:\n' + samenvatting + '\n\n' +
+      'Analyseer deze gesprekken. Geef feedback in dit exacte JSON-formaat (alleen JSON):\n' +
+      '{"patroon1":{"titel":"<titel>","beschrijving":"<beschrijving>"},' +
+      '"patroon2":{"titel":"<titel>","beschrijving":"<beschrijving>"},' +
+      '"kracht":{"titel":"<titel>","beschrijving":"<positief patroon>"},' +
+      '"aanbeveling":"<concrete aanbeveling>"}';
+
+    try {
+      var response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:1000, messages:[{role:'user', content:prompt}]})
+      });
+      var data = await response.json();
+      var raw = (data.content && data.content[0]) ? data.content[0].text : '';
+      var result = JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+      var html = '';
+      if (result.patroon1) html += '<div class="pattern-block"><div class="pattern-label">Patroon 1 — ' + result.patroon1.titel + '</div>' + result.patroon1.beschrijving + '</div>';
+      if (result.patroon2) html += '<div class="pattern-block"><div class="pattern-label">Patroon 2 — ' + result.patroon2.titel + '</div>' + result.patroon2.beschrijving + '</div>';
+      if (result.kracht) html += '<div class="pattern-block" style="background:#F0F7F4;border-left-color:#4A7C6A;"><div class="pattern-label" style="color:#4A7C6A;">Kracht — ' + result.kracht.titel + '</div>' + result.kracht.beschrijving + '</div>';
+      if (result.aanbeveling) html += '<div class="pattern-block" style="background:#FDF0EB;border-left-color:#C4724A;"><div class="pattern-label" style="color:#C4724A;">Aanbeveling</div>' + result.aanbeveling + '</div>';
+      document.getElementById('patternContent').innerHTML = html;
+
+    } catch(err) {
+      document.getElementById('patternContent').innerHTML = '<p style="color:#C4724A;font-size:13px;">Er ging iets mis: ' + err.message + '</p>';
+    }
+    document.getElementById('patternBtn').disabled = false;
+    document.getElementById('patternBtn').textContent = 'Analyseer mijn communicatiepatronen';
+  }
+
+  function switchTab(tab) {
+    var tabs = ['nieuw', 'geschiedenis', 'patronen'];
+    document.querySelectorAll('.tab-btn').forEach(function(b, i) {
+      b.classList.toggle('active', tabs[i] === tab);
+    });
+    var nieuwEls = ['apiCard', 'step1', 'step2', 'loading', 'feedbackCard'];
+    nieuwEls.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = tab === 'nieuw' ? '' : 'none';
+    });
+    var histEl = document.getElementById('historyCard');
+    var patEl = document.getElementById('patternCard');
+    if (histEl) histEl.classList.toggle('visible', tab === 'geschiedenis');
+    if (patEl) patEl.classList.toggle('visible', tab === 'patronen');
+    if (tab === 'geschiedenis') renderHistory();
+    if (tab === 'patronen') {
+      var n = loadGesprekken().length;
+      var msg = n < 2 ? ('Je hebt ' + n + ' gesprek' + (n === 1 ? '' : 'ken') + ' opgeslagen. Minimaal 2 nodig.') : (n + ' gesprekken opgeslagen — klaar voor patroonanalyse.');
+      document.getElementById('patternCount').textContent = msg;
+    }
+  }
+
+  function resetAll() {
+    transcript = '';
+    selectedSituation = '';
+    document.getElementById('contextInput').value = '';
+    document.getElementById('manualInput').value = '';
+    document.getElementById('transcriptBox').textContent = 'Je opname verschijnt hier als tekst...';
+    document.getElementById('transcriptBox').classList.remove('has-content');
+    document.querySelectorAll('.situation-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById('feedbackCard').classList.remove('visible');
+    document.getElementById('errorMsg').style.display = 'none';
+    document.getElementById('recordStatus').textContent = 'Tik om op te nemen';
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  function saveApiKey(val) {
+    localStorage.setItem('ch_apikey', val);
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
+    var saved = localStorage.getItem('ch_apikey');
+    if (saved) document.getElementById('apiKeyInput').value = saved;
+  });
+</script>
+</body>
+</html>
