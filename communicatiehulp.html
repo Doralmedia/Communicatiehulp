@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Communicatiehulp — Jouw persoonlijke communicatiecoach</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Communicatiehulp">
+<meta name="theme-color" content="#C4724A">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -635,6 +641,9 @@
   .analyze-patterns-btn:hover { background: #6A5A9A; transform: translateY(-1px); }
   .analyze-patterns-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   .pattern-count { font-size: 12px; color: #A08070; margin-bottom: 12px; }
+
+  .download-btn { position:fixed; bottom:24px; right:24px; background:#2C1F14; color:#F7F3EE; border:none; border-radius:999px; padding:12px 20px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; cursor:pointer; box-shadow:0 4px 16px rgba(44,31,20,0.2); z-index:999; transition:all 0.2s; display:flex; align-items:center; gap:8px; }
+  .download-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(44,31,20,0.3); }
 </style>
 </head>
 <body>
@@ -1092,8 +1101,57 @@
     window.scrollTo({top:0, behavior:'smooth'});
   }
 
+  
+  function downloadApp() {
+    var html = document.documentElement.outerHTML;
+    var blob = new Blob([html], {type: 'text/html'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'communicatiehulp.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  
+  async function testApiKey() {
+    var k = localStorage.getItem('ch_apikey') || '';
+    var result = document.getElementById('apiTestResult');
+    if (!k) { result.textContent = 'Geen sleutel gevonden.'; result.style.color='#DC2626'; return; }
+    result.textContent = 'Bezig met testen...'; result.style.color='#64748B';
+    try {
+      var resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': k,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:10, messages:[{role:'user', content:'Zeg alleen: OK'}]})
+      });
+      var d = await resp.json();
+      if (d.error) {
+        result.textContent = 'Fout: ' + d.error.message + ' (type: ' + d.error.type + ')';
+        result.style.color = '#DC2626';
+      } else {
+        result.textContent = 'Verbinding OK! API werkt correct.';
+        result.style.color = '#059669';
+      }
+    } catch(e) {
+      result.textContent = 'Netwerkfout: ' + e.message;
+      result.style.color = '#DC2626';
+    }
+  }
+
   function saveApiKey(val) {
     localStorage.setItem('ch_apikey', val);
+  }
+
+  
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js').catch(function() {});
+    });
   }
 
   window.addEventListener('DOMContentLoaded', function() {

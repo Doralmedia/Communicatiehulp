@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Communicatiehulp Zakelijk</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CH Zakelijk">
+<meta name="theme-color" content="#2563EB">
+<link rel="manifest" href="manifest-zakelijk.json">
+<link rel="apple-touch-icon" href="icon-zak-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -532,7 +538,14 @@ function resetAll() {
   }
 }
 
-window.addEventListener('DOMContentLoaded', function() {
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js').catch(function() {});
+    });
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
   var s = localStorage.getItem('ch_apikey');
   if (s) { document.getElementById('apiKeyInput').value = s; saveApiKey(s); }
 });
